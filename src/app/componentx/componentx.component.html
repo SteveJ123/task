@@ -1,1 +1,14 @@
-<p>componentx works!</p>
+
+<button (click)="createComponentx()">add componentx</button>
+<div class="tab">
+    <input class="tablinks" (click)="setTab('tab1')" [value]="buttonText" [disabled]="isdisabled" />
+    <span (click)="editText()">edit</span>
+    <span (click)="saveText()">save</span>    
+  </div>
+
+
+  <div class="contianer">
+      <button (click)="createComponenty()">+</button>
+  </div>
+
+  <template #dynamicLoadComponent></template>
