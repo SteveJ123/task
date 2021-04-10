@@ -1,16 +1,18 @@
 <div class="container">
+    <div>
     <div class="numbers">
-        2,3,10,15,26,35,50,63?
+       <span>Number Series</span> <span class="element-space">2,3,10,15,26,35,50,63?</span> 
     </div>
 
     <div class="result">
-        <h2>Result</h2> {{displayValue}}
+        <span>Result</span> <span class="element-space display-result">{{displayValue}}</span>
     </div>
 
     <div class="clickButton">
-     <input type="number" #inputValue placeholder="value should start from 1" />        
+     <input type="number" #inputValue placeholder="start from 1" />        
     <button (click)="findNumber(inputValue.value)">Click</button>
     </div>
+</div>
     </div>
 
 

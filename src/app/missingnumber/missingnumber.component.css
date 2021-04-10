@@ -1,0 +1,37 @@
+.container{
+    display: flex;
+    justify-content: center;
+    padding: 100px;
+}
+
+span{
+    font-weight: bold;
+    font-size: 32px;
+    padding-bottom: 40px;
+}
+
+.element-space{
+    margin-left: 20px;
+}
+
+.numbers, .result{
+    margin-bottom: 40px;
+}
+
+input{
+    width: 254px;
+    height: 40px;
+    text-align: center;
+    font-size: 32px;
+}
+
+button{
+    width: 254px;
+    height: 46px;
+    text-align: center;
+    font-size: 32px;
+}
+
+.display-result{
+    font-size: 60px;
+}
