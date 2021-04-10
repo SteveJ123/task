@@ -1,0 +1,8 @@
+.top, .bottom{
+    display: flex;
+    justify-content: space-between;
+}
+
+.middle{
+    text-align: center;
+}

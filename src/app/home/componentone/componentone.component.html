@@ -1,0 +1,18 @@
+<div class="container">
+    <div class="first">        
+        <div class="top">
+            <app-componenttwo [childPost]="parentPost"></app-componenttwo>
+        <app-componentthree [childPost]="parentPost"></app-componentthree>
+        </div>
+        <div class="middle">
+            <input type="text" #textValue (change)="addText(textValue.value)">
+        </div>
+        
+        <div class="bottom">
+            <app-componentfour [childPost]="parentPost"></app-componentfour>
+        <app-componentfive [childPost]="parentPost"></app-componentfive>    
+        </div>
+        
+    </div>    
+</div>
+
