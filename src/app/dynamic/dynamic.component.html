@@ -1,0 +1,8 @@
+<h2>welcome to {{title}}</h2>
+
+<select (change)="selectTheName($event.target.value);">
+    <option value="0">seelect</option>
+    <option [value]="val.Id" *ngFor="let val of value">{{val.Name}}</option>    
+    </select>
+
+<template #dynamicLoadComponent></template>
