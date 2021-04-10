@@ -7,6 +7,8 @@ import { MissingnumberComponent } from './missingnumber/missingnumber.component'
 import { DynamicComponent } from './dynamic/dynamic.component';
 import { ComponentxComponent } from './componentx/componentx.component';
 import { ComponentyComponent } from './componenty/componenty.component';
+import { PhonenumberComponent } from './phonenumber/phonenumber.component';
+import { ReactiveFormsModule } from '@angular/forms'; 
 
 
 @NgModule({
@@ -15,11 +17,13 @@ import { ComponentyComponent } from './componenty/componenty.component';
     MissingnumberComponent,
     DynamicComponent,
     ComponentxComponent,
-    ComponentyComponent
+    ComponentyComponent,
+    PhonenumberComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
+    ReactiveFormsModule
     
   ],
   providers: [],

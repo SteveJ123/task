@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewContainerRef, ComponentFactoryResolver, ComponentRef, ComponentFactory } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewContainerRef, ComponentFactoryResolver, ComponentRef, ComponentFactory, ViewChildren } from '@angular/core';
 import {ComponentyComponent} from '../componenty/componenty.component';
 
 
@@ -14,7 +14,10 @@ export class ComponentxComponent implements OnInit {
   // dynamicLoadComponent = "dynamicLoadComponent";
   
   componentRef:any;
-  @ViewChild("dynamicLoadComponent", {read:ViewContainerRef}) entry:ViewContainerRef;    
+  @ViewChild("dynamicLoadComponent", {read:ViewContainerRef}) dynamicLoadComponent;  
+
+  componentRef2:any;
+  @ViewChild("dynamicLoadComponent2", {read:ViewContainerRef}) dynamicLoadComponent2;  
   
   
 
@@ -25,21 +28,17 @@ export class ComponentxComponent implements OnInit {
 
   createComponentx(){    
     const factory= this.resolver.resolveComponentFactory(ComponentxComponent);
-  this.componentRef = this.entry.createComponent(factory);
-  
+  this.componentRef2 = this.dynamicLoadComponent2.createComponent(factory);  
 
 }
 
   createComponenty(){    
       const factory= this.resolver.resolveComponentFactory(ComponentyComponent);
-    this.componentRef = this.entry.createComponent(factory);
+    this.componentRef = this.dynamicLoadComponent.createComponent(factory);
     
 
 }
-
-  setTab(tabname: string) {
-    console.log("test");
-  }
+  
 
   editText(){
     this.isdisabled = false;

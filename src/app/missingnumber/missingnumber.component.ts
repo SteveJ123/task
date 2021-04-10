@@ -23,8 +23,6 @@ export class MissingnumberComponent implements OnInit {
 // So on ........
 // T8=8^2-1=63 here nis even subtract 1
 
-
-
 findNumber(val){    
   if(val%2 == 0 ){
     let result = (val*val)-1;

@@ -1,0 +1,15 @@
+<form [formGroup]="userProfileForm" (ngSubmit)="onSubmit()">
+    <div formArrayName="mobiles">
+        <h4>Enter mobile number</h4>
+        <button (click)="addNewMobile($event)">Add another mobile number</button>
+
+        <div *ngFor="let mobile of mobiles.controls; let i=index">
+            <label for="">mobile {{i+1}}</label>
+            <input type="text" [formControlName]="i" >
+            <button *ngIf="deleteButtonFlag" className="delete{{i}}">delete</button>
+        </div>
+    </div>
+
+    <button type="submit">Submit</button>
+
+</form>
