@@ -35,3 +35,7 @@ button{
 .display-result{
     font-size: 60px;
 }
+
+.result{
+    text-align: center;
+}
