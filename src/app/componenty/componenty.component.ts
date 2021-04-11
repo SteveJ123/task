@@ -12,4 +12,8 @@ export class ComponentyComponent implements OnInit {
   ngOnInit(): void {
   }
 
+  getText(value){
+    console.log("value", value, this);
+  }
+
 }

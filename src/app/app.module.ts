@@ -8,7 +8,8 @@ import { DynamicComponent } from './dynamic/dynamic.component';
 import { ComponentxComponent } from './componentx/componentx.component';
 import { ComponentyComponent } from './componenty/componenty.component';
 import { PhonenumberComponent } from './phonenumber/phonenumber.component';
-import { ReactiveFormsModule } from '@angular/forms'; 
+import { ReactiveFormsModule } from '@angular/forms';
+import { ButtonComponent } from './button/button.component'; 
 
 
 @NgModule({
@@ -18,7 +19,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     DynamicComponent,
     ComponentxComponent,
     ComponentyComponent,
-    PhonenumberComponent
+    PhonenumberComponent,
+    ButtonComponent
   ],
   imports: [
     BrowserModule,

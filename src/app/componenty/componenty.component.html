@@ -1,4 +1,4 @@
 <div class="container">
-    <input type="text" class="mt-2">
-    <button>save</button>
+    <input type="text" #textvalue class="mt-2 mb-2">
+    <button (click)="getText(textvalue.value)">save</button>
 </div>
