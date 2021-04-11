@@ -1,15 +1,14 @@
-<form [formGroup]="userProfileForm" (ngSubmit)="onSubmit()">
-    <div formArrayName="mobiles">
-        <h4>Enter mobile number</h4>
-        <button (click)="addNewMobile($event)">Add another mobile number</button>
+<form class="container text-center mt-4" [formGroup]="userProfileForm" (ngSubmit)="onSubmit()">
+    <div formArrayName="mobiles">        
+        <button class="mt-4" (click)="addNewMobile($event)">Add another mobile number</button>
 
         <div *ngFor="let mobile of mobiles.controls; let i=index">
-            <label for="">mobile {{i+1}}</label>
+            <label class="mt-2" for="">mobile {{i+1}}</label>
             <input type="text" [formControlName]="i" >
-            <button *ngIf="deleteButtonFlag" className="delete{{i}}">delete</button>
+            <button *ngIf="deleteButtonFlag" className="delete{{i}}">Delete</button>
         </div>
     </div>
 
-    <button type="submit">Submit</button>
+    <button class="mt-2" type="submit">Submit</button>
 
 </form>
