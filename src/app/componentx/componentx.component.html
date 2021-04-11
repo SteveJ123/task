@@ -1,13 +1,17 @@
-<button (click)="createComponentx()">add componentx</button>
+<div class="container mt-2">
+    <button class="button-component-x" (click)="createComponentx()">add componentx</button>
+</div>
+
 <div class="tab">    
-    <input class="tablinks" (click)="setTab('tab1')" [value]="buttonText" [disabled]="isdisabled" />
+    <input class="tablinks text-center" #panelText [value]="buttonText" [disabled]="isdisabled" />
     <span (click)="editText()">edit</span>
-    <span (click)="saveText()">save</span>
-    <div class="contianer">     
-    </div> 
-    <button (click)="createComponenty()">+</button>      
+    <span (click)="saveText(panelText.value)">save</span>     
   </div>
-  <div>
+  <div class="text-center">
+    <button (click)="createComponenty()">+</button>      
+</div>
+
+  <div class="text-center">
     <template #dynamicLoadComponent></template>     
 </div>
 

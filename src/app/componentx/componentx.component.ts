@@ -44,8 +44,9 @@ export class ComponentxComponent implements OnInit {
     this.isdisabled = false;
   }
 
-  saveText(){
+  saveText(value){
     this.isdisabled = true;
+    this.buttonText = value;    
   }
 
 }
