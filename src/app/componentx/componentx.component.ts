@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewContainerRef, ComponentFactoryResolver, ComponentRef, ComponentFactory, ViewChildren } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewContainerRef, ComponentFactoryResolver, ComponentRef, ComponentFactory, ViewChildren, Input } from '@angular/core';
 import {ComponentyComponent} from '../componenty/componenty.component';
 
 
@@ -8,6 +8,7 @@ import {ComponentyComponent} from '../componenty/componenty.component';
   styleUrls: ['./componentx.component.css']
 })
 export class ComponentxComponent implements OnInit {
+
 
   buttonText = "tabname";
   isdisabled = true;
