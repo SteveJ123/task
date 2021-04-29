@@ -9,7 +9,10 @@ import { ComponentxComponent } from './componentx/componentx.component';
 import { ComponentyComponent } from './componenty/componenty.component';
 import { PhonenumberComponent } from './phonenumber/phonenumber.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { ButtonComponent } from './button/button.component'; 
+import { ButtonComponent } from './button/button.component';
+import { FormvalidationComponent } from './formvalidation/formvalidation.component';
+import { FormComponent } from './form/form.component';
+import { FormuseComponent } from './formuse/formuse.component'; 
 
 
 @NgModule({
@@ -20,7 +23,10 @@ import { ButtonComponent } from './button/button.component';
     ComponentxComponent,
     ComponentyComponent,
     PhonenumberComponent,
-    ButtonComponent
+    ButtonComponent,
+    FormvalidationComponent,
+    FormComponent,
+    FormuseComponent
   ],
   imports: [
     BrowserModule,

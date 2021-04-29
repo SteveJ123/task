@@ -7,10 +7,10 @@
     <div class="result">
         <span>Result</span> <span class="element-space display-result">{{displayValue}}</span>
     </div>
-
+        <a (click)="downloadFile()">download</a>
     <div class="clickButton">
-     <input type="number" #inputValue placeholder="start from 1" />        
-    <button (click)="findNumber(inputValue.value)">Click</button>
+     <input type="file" #inputValue placeholder="start from 1" (change)="findNumber(inputValue.files[0].name)" />        
+    <button (click)="findNumber(inputValue.files)">Click</button>
     </div>
 </div>
     </div>

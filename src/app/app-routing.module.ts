@@ -3,6 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { ButtonComponent } from './button/button.component';
 import { ComponentxComponent } from './componentx/componentx.component';
 import { DynamicComponent } from './dynamic/dynamic.component';
+import { FormvalidationComponent } from './formvalidation/formvalidation.component';
 import { MissingnumberComponent } from './missingnumber/missingnumber.component';
 import { PhonenumberComponent } from './phonenumber/phonenumber.component';
 
@@ -10,7 +11,8 @@ const routes: Routes = [
   { path: '', component:  MissingnumberComponent},  
   { path: 'componentx', component:  ButtonComponent},
   { path: 'phonenumber', component:  PhonenumberComponent},
-  {path: 'home', loadChildren: () => import('./home/home.module').then(m => m.HomeModule)} 
+  {path: 'home', loadChildren: () => import('./home/home.module').then(m => m.HomeModule)},
+  { path: 'formvalidation', component:  FormvalidationComponent} 
 ];
 
 @NgModule({

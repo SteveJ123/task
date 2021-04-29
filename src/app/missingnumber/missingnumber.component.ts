@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { saveAs } from 'file-saver';
 
 @Component({
   selector: 'app-missingnumber',
@@ -11,9 +12,7 @@ export class MissingnumberComponent implements OnInit {
   displayValue;
 
   myForm:FormGroup;
-  constructor() { }
-
-  ngOnInit(): void {
+  constructor() { }  ngOnInit(): void {
   }
 
 // squared number eg
@@ -24,6 +23,7 @@ export class MissingnumberComponent implements OnInit {
 // T8=8^2-1=63 here nis even subtract 1
 
 findNumber(val){    
+  console.log(val);
   if(val%2 == 0 ){
     let result = (val*val)-1;
     this.displayValue = result;
@@ -32,9 +32,9 @@ findNumber(val){
     this.displayValue = result;
   }
     
-    
   
-
+  
+  
     // if(n%2==0){
     // new= (n^2)-1;
     // }
@@ -42,6 +42,10 @@ findNumber(val){
     // new= (n*n)+1;
     // }
 
+}
+
+downloadFile(){
+  saveAs("http://161.35.229.33:8002/media/policy/Linking_Policy_1_kx862pP.pdf", "filename.pdf");
 }
 
 }
