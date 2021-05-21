@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, NgForm, FormGroup, Validators } from '@angular/forms';
 import { saveAs } from 'file-saver';
 
 @Component({
@@ -10,6 +10,11 @@ import { saveAs } from 'file-saver';
 export class MissingnumberComponent implements OnInit {
 
   displayValue;
+
+  // test1 = [1, 2, 3, 4, 5, 6, 7, 8];
+  // test1Sort = this.test1.sort();
+  // test2 = [4, 3, 2, 1];
+  // test2Sort = this.test2.sort();
 
   myForm:FormGroup;
   constructor() { }  ngOnInit(): void {
