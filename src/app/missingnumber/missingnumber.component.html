@@ -44,6 +44,15 @@
     </div>
     
 
+    <div class="container">
+      <div>
+      <p [class]="color">text color</p>
+      <p [class.text-blue]="!color">text color</p>
+      <p [ngClass]="colorSelector">text color</p>
+      </div>
+
+      <button (click)="changeColor('text-blue')" >blue</button> <button (click)="color = 'text-green'">green</button> <button (click)="color = 'text-yellow'">yellow</button>
+    </div>
     
 
 

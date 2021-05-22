@@ -17,6 +17,15 @@ export class MissingnumberComponent implements OnInit {
   // test2Sort = this.test2.sort();
 
   myForm:FormGroup;
+
+  color;
+
+  public colorSelector = {
+    "text-blue": true,
+    "text-green": false,
+    "text-yellow": false,
+  }
+
   constructor() { }  ngOnInit(): void {
   }
 
@@ -47,6 +56,10 @@ findNumber(val){
     // new= (n*n)+1;
     // }
 
+}
+
+changeColor(colorchange){
+  this.color = colorchange;
 }
 
 downloadFile(){

@@ -43,3 +43,15 @@ button{
 /* .selectedValue{
     background-color: blue;
 } */
+
+.text-blue{
+    color: blue;
+}
+
+.text-green{
+    color: green;
+}
+
+.text-yellow{
+    color: yellow;
+}
