@@ -1,0 +1,1054 @@
+import { Component, OnInit } from '@angular/core';
+import { AuthService } from 'src/app/shared/services/auth.service';
+import { getDay, isLeapYear, differenceInHours, differenceInMinutes, isThisMonth } from 'date-fns';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { DataTableDirective } from 'angular-datatables';
+import { Subject } from 'rxjs';
+import { BsDatepickerConfig, BsDatepickerViewMode } from 'ngx-bootstrap/datepicker';
+import { DatePipe, NgIf } from '@angular/common';
+import { ToastrService } from 'ngx-toastr';
+import { connectableObservableDescriptor } from 'rxjs/internal/observable/ConnectableObservable';
+import { initTimestamp } from 'ngx-bootstrap/chronos/units/timestamp';
+import { NgxSpinnerService } from 'ngx-spinner';
+import { Router } from '@angular/router';
+
+
+interface Employee {
+	empName: string,
+	empId: string,
+	attendance: Attendance[],
+	punch_in: any,
+	punch_out: any,
+	total_working_hours: any,
+	date: Date,
+}
+interface Attendance {
+	date: number,
+	status: number,
+	punchIn?: Date,
+	punchOut?: Date,
+	lunchIn?: Date,
+	lunchOut?: Date,
+}
+
+declare const $: any;
+
+@Component({
+	selector: 'app-attendance-admin',
+	templateUrl: './attendance-admin.component.html',
+	styleUrls: ['./attendance-admin.component.css']
+})
+export class AttendanceAdminComponent implements OnInit {
+	employees: Employee[] = [];
+	rows: Employee[] = [];
+
+	srch: Employee[] = [];
+
+	public dtElement: DataTableDirective;
+	public dtOptions: DataTables.Settings = {};
+	public dtTrigger: Subject<any> = new Subject();
+	public dateFlage = true;
+	months;
+	header: number[] = [];
+	modalData;
+	public pipe = new DatePipe("en-US");
+	flag = false;
+	dataLoaded = false;
+	searchForm: FormGroup;
+	attendanceForm: FormGroup;
+	editAttendanceForm: FormGroup;
+	public date = new Date();
+	public totalHours;
+	public all = [];
+	
+
+	constructor(
+		private spinner: NgxSpinnerService,
+		private auth: AuthService,
+		private formBuilder: FormBuilder,
+		private toastr: ToastrService,
+		private router: Router) {
+			// this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+		this.searchForm = this.formBuilder.group({
+			month: ['', [Validators.required]],
+			year: ['', [Validators.required]]
+		});
+		// console.log("is leapyear 2020=>", leapyear(2020))
+
+		let currentDate = new Date()
+		this.getAttendanceDetails(currentDate.getFullYear(), currentDate.getMonth() + 1);
+		// this.getTableHeader();
+		this.modalData = {
+			date: new Date(),
+			punchOut: new Date(),
+			punchIn: new Date(),
+
+			timeline: [],
+			break: 0,
+			production: 0,
+			number: 0,
+			overtime: 0,
+			type: ""
+		}
+
+		this.minTime.setHours(9);
+		this.minTime.setMinutes(0);
+		this.maxTime.setHours(18);
+		this.maxTime.setMinutes(0);
+	}
+
+	getTableHeader() {
+		this.header = [];
+		for (var i = 0; i < this.months; i++) {
+			this.header[i] = i + 1;
+		}
+	}
+
+
+	get years() {
+		let cy = (new Date()).getFullYear();
+
+		let years = []
+		for (let i = 0; i <= 10; i++) {
+			years.push(cy - i)
+		}
+		return years
+	}
+
+	currentYear;
+	currentMonth;
+	bsConfig: Partial<BsDatepickerConfig>;
+	today = new Date();
+	datePickerValue = "";
+	minMode: BsDatepickerViewMode = 'month';
+	minDate = new Date(this.today.getFullYear() + 1, this.today.getMonth() - 2, this.today.getDate());
+
+	changeYearMonth() {
+		// console.log(this.datePickerValue);
+		var obj = new Date(this.datePickerValue);
+		// console.log('month', obj.getMonth(), 'year', obj.getFullYear());
+		this.getAttendanceDetails(obj.getFullYear(), obj.getMonth() + 1);
+		this.datePickerValue = "";
+		console.log(this.pipe.transform(obj, "yyyy-MM"))
+		if (this.pipe.transform(obj, "yyyy-MM") == this.pipe.transform(this.today, "yyyy-MM")) {
+			this.dateFlage = true;
+			console.log("1");
+		}
+
+		
+		else {
+			this.dateFlage = false;
+			console.log("2");
+		}
+	}
+
+	getCurrentMonth(value: any) {
+		var months = [
+			{ id: 1, name: 'january' },
+			{ id: 2, name: 'february' },
+			{ id: 3, name: 'march' },
+			{ id: 4, name: 'april' },
+			{ id: 5, name: 'may' },
+			{ id: 6, name: 'june' },
+			{ id: 7, name: 'july' },
+			{ id: 8, name: 'august' },
+			{ id: 9, name: 'september' },
+			{ id: 10, name: 'october' },
+			{ id: 11, name: 'november' },
+			{ id: 12, name: 'december' }];
+		let temp = months.filter(e => e.id == value);
+		return temp[0].name;
+	}
+
+	initialPunchIn: boolean = false
+	getAttendanceDetails(year: number, month: number) {
+		let emp = {};
+		let empNames = [];
+		this.employees = [];
+		this.rows = [];
+		this.srch = [];
+		this.all = [];
+		this.currentMonth = month;
+		this.currentYear = year;
+		this.months = getDays(month, year)
+		this.getTableHeader()
+		// console.log(month, year)
+
+		this.auth.getAttendanceDetails(year, month).subscribe(
+			result => {
+				let logs = result['logs']
+				// console.log(logs)
+				Object.keys(logs).forEach(key => {
+					emp[key] = logs[key];
+					empNames.push(key);
+				});
+				this.spinner.hide();
+
+				// console.log(empNames)
+				// console.log(emp)
+
+				for (var i = 0; i < empNames.length; i++) {
+					let u = emp[empNames[i]];
+					let attendance: Attendance[] = [];
+					attendance = this.getBlankAttendance(month, year);
+					let id = "";
+					let punch_in = [], punch_out = [], date, total_working_hours;
+					if (u !== 'No log found') {
+						Object.keys(u).forEach(key => {
+							date = new Date(u[key].date);
+							// console.log(date);
+
+							let day = new Date(u[key].date).getDate();
+							// console.log("u[key]", u[key]);
+							let status = 0;
+							// console.log(u[key]);
+
+							if (u[key].leave) {
+								status = getLeaveStatus(u[key].leave);
+
+
+								let index = day - 1
+								// console.log(status);
+								attendance[index].status = status;
+
+								// console.log(u[key].punch_in);
+								// console.log(date);
+
+								let obj = u[key].punch_in;
+								Object.keys(obj).forEach(key => {
+									// console.log(obj[key]);
+
+									let time = getDate(date, getHours(obj[key]), getMintues(obj[key]));
+									punch_in.push(time);
+								})
+								if (punch_in.length === 1) {
+									this.initialPunchIn = true
+								} else {
+									this.initialPunchIn = false
+								}
+
+								obj = u[key].punch_out;
+								Object.keys(obj).forEach(key => {
+									let time = getDate(date, getHours(obj[key]), getMintues(obj[key]));
+									punch_out.push(time);
+								})
+								total_working_hours = u[key].total_working_hours
+							}
+							id = u[key].emp
+						})
+						this.dataLoaded = true;
+						this.employees.push({ empName: empNames[i], empId: id, attendance: attendance, punch_in: punch_in, punch_out: punch_out, date: date, total_working_hours: total_working_hours });
+						// console.log(this.employees);
+						// if(this.employees.)
+						let data = { //for all employees data
+							empId: id,
+							[id]: u
+						}
+						this.all.push(data);
+
+					}
+				}
+				this.rows = this.employees;
+				this.srch = [...this.rows];
+				console.log("rows", this.rows);
+				// console.log("all", this.all);
+				// this.dtTrigger.next()
+			},
+			error => {
+				this.spinner.hide();
+
+				console.error(error);
+			}
+		);
+	}
+
+	postAttend() {
+
+	}
+
+	getBlankAttendance(month, year) {
+		// console.log("this.months", this.months)
+		let attendance: Attendance[] = []
+		for (var i = 0; i < this.months; i++) {
+			// var date = new Date(month + "/" + (i + 1) + "/" + year)
+			// console.log("=>", getDay(date))
+			attendance.push({ date: (i + 1), status: 0 })
+		}
+		return attendance;
+	}
+	editEmpId;
+	timeline(empId, day) {
+		// this.currentMonth = month;
+		// this.currentYear = year;
+
+		let date = new Date();
+		let day2 = day;
+		date.setFullYear(this.currentYear, this.currentMonth - 1, day);
+		day = this.pipe.transform(date, "yyyy-MM-dd");
+		let emp = this.all.filter(ele => ele.empId === empId);
+
+		console.log('all=> ',this.all)
+		// debugger;
+
+		// console.log(day);
+		console.log(emp[0][empId][day].leave);
+
+		this.editEmpId = emp[0][empId][day]
+		this.modalData.type = this.editEmpId.leave
+		this.modalData.date = day;
+		// console.log(emp[0][empId][day])
+		this.modalData.punchIn = emp[0][empId][day].punch_in;
+		this.modalData.punchOut = emp[0][empId][day].punch_out;
+
+		let obj = this.modalData.punchIn;
+		obj = Object.values(obj);
+		this.modalData.punchIn = obj[0];
+		// Object.keys(obj).forEach(key => {
+		//   let time = getDate(date, getHours(obj[key]), getMintues(obj[key]));
+		//   this.modalData.punchIn=time;
+		// })
+
+
+		obj = this.modalData.punchOut;
+		Object.keys(obj).forEach(key => {
+			let time = getDate(date, getHours(obj[key]), getMintues(obj[key]));
+			this.modalData.punchOut = time;
+		})
+
+		//PRODUCTION
+		// let prod = emp[0][empId][day].total_working_hours
+		// if (prod.slice(0, 1) === '0') {
+		// 	console.log(prod.slice(1, 5));
+		// 	this.modalData.production = prod.slice(1, 5)
+		// } else {
+		// 	this.modalData.production = prod.slice(0, 4)
+		// }
+
+		this.modalData.production = emp[0][empId][day].total_working_hours;
+
+		let punchInObj = Object.values(emp[0][empId][day].punch_in);
+		let punchOutObj = Object.values(emp[0][empId][day].punch_out);
+		let timeline = []
+		let str;
+
+
+		for (var i = 0; i <= punchInObj.length; i++) {
+			if (punchInObj[i]) {
+				str = new Date(new Date().toDateString() + ' ' + punchInObj[i])
+				// date.setHours(parseInt(str.slice(0,2)),parseInt(str.slice(3,5)))
+				// if (punchInObj[i].getDate() === day2) {
+				timeline.push({ status: "In", time: str })
+				if (punchOutObj[i]) {
+					str = new Date(new Date().toDateString() + ' ' + punchOutObj[i])
+
+					// date.setHours(parseInt(str.slice(0,2)),parseInt(str.slice(3,5)))
+					timeline.push({ status: "Out", time: str })
+					// console.log("1")
+				} else {
+					break;
+				}
+			}
+
+		}
+		// console.log(timeline[0].status)
+
+		this.modalData.timeline = timeline
+		// PUNCH IN
+		if (timeline[0]) {
+			this.modalData.punchIn = timeline[0].time
+
+			//PUNCH OUT
+			let index = timeline.length - 1;
+			// console.log(timeline[index].status)
+			if (timeline[index].status == "Out") {
+				// console.log("2")
+				this.flag = true;
+				this.modalData.punchOut = timeline[index].time
+			}
+		}
+		// this.modalData.production = this.getTotalWorkDone(timeline)
+		this.modalData.overtime = this.getTotalWorkDone(timeline);
+		this.modalData.break = this.getTotalBreak(timeline);
+
+		// console.log(this.modalData);
+	}
+
+	getTotalWorkDone(log) {
+
+		// let h = this.modalData.production.slice(0, 2);
+		// let m = this.modalData.production.slice(3, 5);
+		// let timeWorked = h - 8;
+
+		// if (timeWorked >= 0) {
+		// 	return timeWorked + ":" + m;
+		// }
+		// else {
+		// 	return 0;
+		// }
+
+		let timeWorked = 0;
+		if (log.length >= 2) {
+			for (let i = 0; i < log.length - 1; i++) {
+				if (log[i + 1].time, log[i].time)
+					timeWorked += differenceInMinutes(log[i + 1].time, log[i].time);
+			}
+
+		}
+		return this.calculateOvertime(timeWorked);
+	}
+
+	calculateOvertime(timeWorked) {
+		console.log(timeWorked)
+		let overtime = 0;
+		let standardWorkingMin = 8.5 * 60;
+		if (timeWorked > standardWorkingMin) {
+			overtime = timeWorked - standardWorkingMin;
+		}
+		return overtime;
+	}
+
+	getTotalBreak(log) {
+		console.log("=>", log)
+		let breakTaken = 0;
+		if (log.length >= 3) {
+			for (let i = 0; i < log.length - 1; i++) {
+				if (i % 2 != 0) { //odd index ---> punch out
+					if (log[i + 1].time || log[i].time)
+						console.log(log[i + 1], log[i], log[i].time)
+					breakTaken += differenceInMinutes(log[i + 1].time, log[i].time);
+				}
+			}
+		}
+		return breakTaken;
+	}
+
+	myTime: Date = new Date();
+	minTime: Date = new Date();
+	maxTime: Date = new Date();
+	h = new Date();
+	ngOnInit() {
+		this.bsConfig = Object.assign({}, {
+			minMode: this.minMode,
+			dateInputFormat: 'MMMM YYYY'
+		});
+
+		this.spinner.show();
+
+
+		this.attendanceForm = this.formBuilder.group({
+			emp: [""],
+			emp_id: [""],
+			date: [""],
+			fullDayLeave: [false],
+			punch_timing: this.formBuilder.array([]),
+			punch_in: [""],
+			punch_out: [""],
+			total_hours: [""]// [Validators.required, Validators.min(1), Validators.max(12), Validators.maxLength(2)]]
+		});
+		this.editAttendanceForm = this.formBuilder.group({
+			emp: [""],
+			emp_id: [""],
+			date: [""],
+			fullDayLeave: [false],
+			punch_timing: this.formBuilder.array([]),
+			punch_in: [""],
+			punch_out: [""],
+			total_hours: [""]// [Validators.required, Validators.min(1), Validators.max(12), Validators.maxLength(2)]]
+		});
+
+		this.attendanceForm.controls['date'].setValue(this.myTime);
+		// this.attendanceForm.controls['punch_in'].setValue(this.h);
+		// this.attendanceForm.controls['punch_out'].setValue(this.myTime);
+	}
+	// empName
+	totalWorkingHours() {
+		// if (this.attendanceForm.value.punch_out === null || this.attendanceForm.value.punch_in === null || this.attendanceForm.value.punch_out == "" || this.attendanceForm.value.punch_in == "") { }
+		// else {
+		// 	let hours = this.attendanceForm.value.punch_out.getHours() - this.attendanceForm.value.punch_in.getHours();
+		// 	let min = this.attendanceForm.value.punch_out.getMinutes() - this.attendanceForm.value.punch_in.getMinutes();
+
+		// 	if (hours > 4) {
+		// 		min -= 30;
+		// 	}
+		// 	if (min < 0) {
+		// 		min += 60;
+		// 		hours--;
+		// 	}
+
+		// 	this.totalHours = new Date();
+		// 	this.totalHours.setHours(hours, min);
+		// 	let t = this.totalHours.toString().slice(16, 21);
+
+		// 	this.attendanceForm.controls['total_hours'].setValue(t);
+		// 	console.log(this.attendanceForm.value.total_hours);
+		// }
+		if (this.attendanceForm.value.punch_timing.length > 0) {
+			let hours = 0
+			let min = 0
+			if (this.attendanceForm.value.punch_timing.length > 0) {
+				this.attendanceForm.get('punch_timing')['controls'].forEach(ti => {
+					hours = hours + ti.value.punch_out.getHours() - ti.value.punch_in.getHours();
+					min = min + ti.value.punch_out.getMinutes() - ti.value.punch_in.getMinutes();
+				})
+				// if (hours > 4) {
+				// 	min -= 30;
+				// }
+				if (min < 0) {
+					min += 60;
+					hours--;
+				}
+
+				// debugger;
+
+				this.totalHours = new Date();
+				this.totalHours.setHours(hours, min);
+				let t = this.totalHours.toString().slice(16, 21);
+
+				this.attendanceForm.controls['total_hours'].setValue(t);
+				// console.log("Working hours", this.attendanceForm.value.total_hours);
+			}
+		}
+	}
+
+	add_punch_timing(timing?: any) {
+		let newPunch;
+		if (timing) {
+			newPunch = new FormGroup({
+				punch_in: new FormControl(timing.punch_in),
+				punch_out: new FormControl(timing.punch_out),
+			})
+		} else {
+			newPunch = new FormGroup({
+				punch_in: new FormControl(""),
+				punch_out: new FormControl(""),
+			})
+		}
+		(<FormArray>this.attendanceForm.get('punch_timing')).push(newPunch);
+	}
+
+	delete_punch_timing(index) {
+		(<FormArray>this.attendanceForm.get('punch_timing')).removeAt(index);
+	}
+
+	edit_add_punch_timing(timing?: any) {
+		// console.log(timing);
+
+		let newPunch;
+		if (timing) {
+			newPunch = new FormGroup({
+				punch_in: new FormControl(timing.punch_in),
+				punch_out: new FormControl(timing.punch_out),
+			})
+		} else {
+			newPunch = new FormGroup({
+				punch_in: new FormControl(""),
+				punch_out: new FormControl(""),
+			})
+		}
+		(<FormArray>this.editAttendanceForm.get('punch_timing')).push(newPunch);
+		// console.log(this.editAttendanceForm);
+
+	}
+	edit_delete_punch_timing(index) {
+		(<FormArray>this.editAttendanceForm.get('punch_timing')).removeAt(index);
+	}
+
+	addAttendance() {
+		this.fullDayLeaveChange('add');
+		let d = new Date();
+		let date = this.pipe.transform(this.currentDay, "yyyy-MM-dd");
+		let work = new Date(d.getFullYear(), d.getMonth() - 1, d.getDate(), this.attendanceForm.value.total_hours);
+		// let punch_in = this.pipe.transform(this.attendanceForm.value.punch_in, "H:mm").concat(':00');
+		// let punch_out = this.pipe.transform(this.attendanceForm.value.punch_out, "H:mm").concat(':00');
+		let working_hour = "00:00:00"
+		if (this.totalHours) {
+			working_hour = this.pipe.transform(this.totalHours, "H:mm").concat(':00');
+		}
+		// console.log("tot", working_hour);
+		let punch_timing = [];
+		this.attendanceForm.get('punch_timing')['controls'].forEach(ti => {
+			punch_timing.push({
+				punch_in: this.pipe.transform(ti.value.punch_in, "HH:mm").concat(':00'),
+				punch_out: this.pipe.transform(ti.value.punch_out, "HH:mm").concat(':00'),
+			})
+		})
+		console.log()
+		var leave_status = "";
+		if (!this.attendanceForm.value.fullDayLeave) {
+			let hour = this.totalHours.getHours();
+			if (hour < 2) {
+				leave_status = "Full day leave";
+			} else if (hour >= 2 && hour <= 4) {
+				leave_status = "Half day leave";
+			} else if (hour > 4 && hour <= 6) {
+				leave_status = "one fourth day leave";
+			} else {
+				leave_status = "No leave";
+			}
+		} else {
+			leave_status = "Full day leave"
+		}
+		let obj = {
+			emp: this.attendanceForm.value.emp_id,
+			date: date,
+			// punch_in: { "1": punch_in },
+			// punch_out: { "1": punch_out },
+			leave: leave_status,
+			punch_timing: punch_timing,
+			total_working_hours: working_hour
+		}
+		console.log(obj);
+		console.log(this.attendanceForm);
+		console.log("====>", (new Date().getMonth() + 1), this.currentMonth, this.currentYear)
+		this.auth.setEmpAttendance(obj).subscribe((data: any) => {
+			console.log("data", data);
+			// debugger;
+			let currentDate = new Date();
+			let month = currentDate.getMonth() + 1
+			let year = currentDate.getFullYear()
+			if (month != this.currentMonth) {
+				month = this.currentMonth
+			}
+			if (year != this.currentYear) {
+				year = this.currentYear
+			}
+			this.getAttendanceDetails(year, month);
+			$("#make_attendance").modal("hide");
+			this.attendanceForm.reset();
+			// this.ngOnInit
+		})
+	}
+
+
+
+	currentDay;
+
+	getEmpData(value: any, day: any) {
+		console.log(this.currentYear)
+		var a = new Date();
+		var b = new Date(this.currentYear, (this.currentMonth - 1), day);
+		var c = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1, 0, 0, 0);
+		console.log("b=>", b);
+		console.log("c=>", c);
+
+		if (b < c) {
+			var date = new Date(this.currentYear, this.currentMonth - 1, day);
+			// this.currentDay = this.pipe.transform(date, "MMMM d, y, EEEE");
+			this.currentDay = this.pipe.transform(date, "fullDate")
+			console.log(value, this.currentDay);
+			this.attendanceForm.controls['emp'].setValue(value.empName);
+			this.attendanceForm.controls['emp'].updateValueAndValidity();
+			this.attendanceForm.controls['emp_id'].setValue(value.empId);
+			this.attendanceForm.controls['emp_id'].updateValueAndValidity();
+			this.attendanceForm.controls['date'].setValue(this.currentDay);
+			this.attendanceForm.controls['date'].updateValueAndValidity();
+		} else {
+			setTimeout(() => {
+				$("#make_attendance").modal("hide");
+				this.toastr.error("Attendance date can't be after today's date", "Failed");
+			}, 750);
+		}
+	}
+
+	editTotalWorkingHours() {
+		console.log('fncldd')
+		// if (this.editAttendanceForm.value.punch_out === null || this.editAttendanceForm.value.punch_in === null || this.editAttendanceForm.value.punch_out == "" || this.editAttendanceForm.value.punch_in == "") { }
+		// else {
+
+		// 	let hours = this.editAttendanceForm.value.punch_out.getHours() - this.editAttendanceForm.value.punch_in.getHours();
+		// 	let min = this.editAttendanceForm.value.punch_out.getMinutes() - this.editAttendanceForm.value.punch_in.getMinutes();
+
+		// 	if (hours > 4) {
+		// 		min -= 30;
+		// 	}
+		// 	if (min < 0) {
+		// 		min += 60;
+		// 		hours--;
+		// 	}
+
+		// 	this.totalHours = new Date();
+		// 	this.totalHours.setHours(hours, min);
+		// 	let t = this.totalHours.toString().slice(16, 21);
+
+		// 	this.editAttendanceForm.controls['total_hours'].setValue(t);
+		// 	console.log(this.editAttendanceForm.value.total_hours);
+		// }
+		if (!this.attendanceForm.value.fullDayLeave) {
+			let hours = 0
+			let min = 0
+			if (this.editAttendanceForm.value.punch_timing.length > 0) {
+				console.log("edit total working hours", this.editAttendanceForm.value);
+				this.editAttendanceForm.get('punch_timing')['controls'].forEach(ti => {
+					hours = hours + ti.value.punch_out.getHours() - ti.value.punch_in.getHours();
+					min = min + ti.value.punch_out.getMinutes() - ti.value.punch_in.getMinutes();
+				})
+				// if (hours > 4) {
+				// 	min -= 30;
+				// }
+				if (min < 0) {
+					min += 60;
+					hours--;
+				}
+				// debugger;
+				this.totalHours = new Date();
+				this.totalHours.setHours(hours, min);
+				let t = this.totalHours.toString().slice(16, 21);
+
+				this.editAttendanceForm.controls['total_hours'].setValue(t);
+				// console.log("Working hours", this.attendanceForm.value.total_hours);
+			}
+		}
+	}
+
+	editAttendance(event) {
+		// event.preventDefault();
+		if (this.editAttendanceForm.controls.punch_timing.status == "INVALID") {
+			this.toastr.error("Punch In/Punch Out time cannot be blank", "Failed");
+			return
+		}
+		if (this.editAttendanceForm.invalid) {
+			this.toastr.error("Form Invalid", "Failed");
+			return
+		}
+		let d = new Date();
+		let date = this.pipe.transform(this.currentDay, "yyyy-MM-dd");
+		let work = new Date(d.getFullYear(), d.getMonth() - 1, d.getDate(), this.editAttendanceForm.value.total_hours);
+		// let punch_in = this.pipe.transform(this.editAttendanceForm.value.punch_in, "HH:mm").concat(':00');
+		// let punch_out = this.pipe.transform(this.editAttendanceForm.value.punch_out, "HH:mm").concat(':00');
+
+		let punch_timing = [];
+		if (!this.editAttendanceForm.value.fullDayLeave) {
+			this.editAttendanceForm.get('punch_timing')['controls'].forEach(ti => {
+				punch_timing.push({
+					punch_in: this.pipe.transform(ti.value.punch_in, "HH:mm").concat(':00'),
+					punch_out: this.pipe.transform(ti.value.punch_out, "HH:mm").concat(':00'),
+				})
+			})
+		}
+
+		let timearray = [];
+		if (!this.editAttendanceForm.value.fullDayLeave) {
+			this.editAttendanceForm.get('punch_timing')['controls'].forEach(ti => {
+				timearray.push(
+					ti.value.punch_in.getTime(),
+					ti.value.punch_out.getTime()
+				)
+			})
+		}
+
+
+
+		console.log("punch time", timearray);
+		let minValue =  Math.min.apply(Math, timearray);    
+        let maxValue =  Math.max.apply(Math, timearray);
+
+		console.log("min max", minValue, maxValue);
+
+		// let min = 1620620160000;
+		// let max = 1620657000000;
+		let diff = maxValue - minValue;
+		// let hours = (diff / 1000 / (60 * 60)).toFixed(2);
+
+		debugger;
+		var msec = diff;
+		var hh = Math.floor(msec / 1000 / 60 / 60);
+		msec -= hh * 1000 * 60 * 60;
+		var mm = Math.floor(msec / 1000 / 60);
+		msec -= mm * 1000 * 60;
+		var ss = Math.floor(msec / 1000);
+		msec -= ss * 1000;
+		// let hours = hh
+		// this.modalData.production = hours;
+
+		console.log("modal production", this.modalData.production);
+
+		var working_hour = "00:00:00"
+		var leave_status = "";
+
+		if (!this.editAttendanceForm.value.fullDayLeave) {
+			working_hour = this.pipe.transform(this.totalHours, "HH:mm").concat(':00');
+			console.log("tot", working_hour);
+			let hour = this.totalHours.getHours();
+			if (hour < 2) {
+				leave_status = "Full day leave";
+			} else if (hour >= 2 && hour <= 4) {
+				leave_status = "Half day leave";
+			} else if (hour > 4 && hour <= 6) {
+				leave_status = "one fourth day leave";
+			} else {
+				leave_status = "No leave";
+			}
+		} else {
+			leave_status = "Full day leave";
+		}
+
+		let obj = {
+			emp: this.editEmpId.emp,
+			date: this.editEmpId.date,
+			// punch_in: { "1": punch_in },
+			// punch_out: { "1": punch_out },
+			punch_timing: punch_timing,
+			leave: leave_status,
+			// total_working_hours: working_hour,  //added
+			 total_working_hours: working_hour.split(':')[0] +":"+working_hour.split(':')[1]+":"+"00",
+			id: this.editEmpId.id
+		}
+		console.log("edit", obj);
+		console.log(this.editAttendanceForm);
+
+		this.auth.setEmpAttendance(obj).subscribe((data: any) => {
+			console.log(data);
+
+
+			let currentDate = new Date();
+			let month = currentDate.getMonth() + 1
+			let year = currentDate.getFullYear()
+			if (month != this.currentMonth) {
+				month = this.currentMonth
+			}
+			if (year != this.currentYear) {
+				year = this.currentYear
+			}
+			// debugger;
+
+			let empIndex = this.all.findIndex((e)=>e.empId === data.emp)
+			if(empIndex>-1){
+				this.all[empIndex][data.emp][data.date] = data
+			}
+			console.log(this.all[empIndex][data.emp][data.date])
+			// debugger; 
+			// this.getAttendanceDetails(year, month);
+			$("#edit_attendance").modal("hide");
+			this.editAttendanceForm.reset();
+		})
+		this.timeline(this.editEmpId.emp, this.editEmpId.date.slice(8, 10));
+	}
+	editEmpData(value: any, day: any) {  //edit
+		// var a = new Date();
+		// var b = new Date(a.getFullYear(), a.getMonth(), day);
+		// var c = new Date(a.getFullYear(), a.getMonth(), a.getDate()+1,0,0,0);
+		// console.log(b);
+		// console.log(c);attendance_info
+		$("#attendance_info").modal("hide");
+
+
+		// if(b < c) {
+		// var date = new Date(this.currentYear, this.currentMonth - 1, day);
+		this.currentDay = this.pipe.transform(value.date, "fullDate");
+		console.log(value, this.currentDay);
+		this.editAttendanceForm.controls['emp'].setValue(value.name);
+		this.editAttendanceForm.controls['emp'].updateValueAndValidity();
+		this.editAttendanceForm.controls['emp_id'].setValue(value.emp);
+		this.editAttendanceForm.controls['emp_id'].updateValueAndValidity();
+		this.editAttendanceForm.controls['date'].setValue(this.currentDay);
+		this.editAttendanceForm.controls['date'].updateValueAndValidity();
+		if (value.leave == "Full day leave") {
+			this.editAttendanceForm.patchValue({
+				fullDayLeave: true
+			})
+		}
+		(<FormArray>this.editAttendanceForm.get('punch_timing')).clear();
+		// this.editAttendanceForm.controls['punch_timing'].setValue([]);
+		// this.editAttendanceForm.controls['punch_timing'].updateValueAndValidity();
+		let punch;
+		punch = Object.values(value.punch_in);
+		let punchOut;
+		punchOut = Object.values(value.punch_out);
+		// let str: string = punch[0].toString();
+		// console.log(punch)
+		// let time;
+		// let p1 = new Date();
+		// p1.setHours(parseInt(str.slice(0, 3)), parseInt(str.slice(3, 5)))
+		let punch_timing = [];
+		// Object.keys(value.punch_in).forEach(ti=>{
+		// 	punch_timing.push({
+		// 		punch_in:value.punch_in[ti]
+		// 	})
+		// })
+		// Object.keys(value.punch_out).forEach(ti=>{
+		// 	punch_timing.push({
+		// 		punch_out:value.punch_out[ti]
+		// 	})
+		// })
+		for (let i = 0; i < punch.length; i++) {
+			// console.log(punch[i]);
+			// console.log(JSON.stringify(punchOut[i]));
+			// console.log(value.date);
+
+			punch_timing.push({
+				punch_in: getDate(value.date, getHours(punch[i]), getMintues(punch[i])),
+				punch_out: getDate(value.date, getHours(punchOut[i]), getMintues(punchOut[i]))
+			})
+		}
+		// console.log(punch_timing);
+
+		punch_timing.map(timing => {
+			// console.log(timing);
+			this.edit_add_punch_timing(timing)
+		})
+		// this.editAttendanceForm.controls['punch_timing'].updateValueAndValidity();
+
+
+		// this.editAttendanceForm.controls['punch_in'].setValue(p1);
+		// this.editAttendanceForm.controls['punch_in'].updateValueAndValidity();
+
+		// punch = Object.values(value.punch_out);
+		// str = punch[0].toString();
+		// p1 = new Date();
+
+		// p1.setHours(parseInt(str.slice(0, 3)), parseInt(str.slice(3, 5)))
+		// this.editAttendanceForm.controls['punch_out'].setValue(p1);
+		// this.editAttendanceForm.controls['punch_out'].updateValueAndValidity();
+		// } else {
+		//   setTimeout(() => {
+		//     $("#make_attendance").modal("hide");
+		//     this.toastr.error("Attendance date can't be after today's date","Failed");
+		//   }, 750);
+		// }
+	}
+
+	searchByName(val) {
+		this.rows.splice(0, this.rows.length);
+		if (val == null) {
+			this.rows.push(...this.srch);
+			return;
+		}
+		if (val !== "") {
+			let temp = this.srch.filter(function (d) {
+				val = val.toLowerCase();
+				return d.empName.toLowerCase().indexOf(val) !== -1 || !val;
+			});
+			this.rows.push(...temp);
+		} else {
+			this.rows.push(...this.srch);
+		}
+	}
+
+	empsearch = ''
+	async searchName() {
+		let val = this.empsearch;
+		let r = new RegExp(val, 'i')
+		if (val.trim() == '') {
+			this.rows = this.srch
+			return
+		}
+		console.log(val);
+
+		this.rows = []
+		this.srch.forEach(e => {
+			if (e.empName.search(r) != -1) {
+				this.rows.push(e)
+				// console.log(e.empName);
+
+			}
+		});
+	}
+
+
+	search() {
+		if (this.searchForm.invalid) {
+			return;
+		}
+		var year = this.searchForm.value.year;
+		var month = this.searchForm.value.month;
+		this.dataLoaded = false;
+		this.getAttendanceDetails(year, month);
+
+	}
+
+	fullDayLeaveChange(type) {
+		if (type == "add") {
+			console.log(this.attendanceForm.value.fullDayLeave)
+			if (this.attendanceForm.value.fullDayLeave) {
+				console.log("b4=>", this.attendanceForm.value.punch_timing)
+				console.log(this.attendanceForm.controls.punch_timing.status)
+				if (this.attendanceForm.value.punch_timing.length > 0) {
+					for (let index = 0; index < this.attendanceForm.value.punch_timing.length; index++) {
+						console.log(this.attendanceForm.value.punch_timing.length, this.attendanceForm.value.punch_timing[0])
+						this.delete_punch_timing(index)
+					}
+				}
+				console.log("after=>", this.attendanceForm.value.punch_timing)
+
+			}
+		} else {
+			console.log(this.editAttendanceForm.value.fullDayLeave)
+			if (this.editAttendanceForm.value.fullDayLeave) {
+				if (this.editAttendanceForm.value.punch_timing.length > 0) {
+					for (let index = 0; index < this.editAttendanceForm.value.punch_timing.length; index++) {
+						console.log(this.editAttendanceForm.value.punch_timing.length, this.editAttendanceForm.value.punch_timing[0])
+						this.edit_delete_punch_timing(index)
+					}
+				}
+
+			}
+		}
+	}
+
+}
+function getLeaveStatus(type: string) {
+	// console.log(type);
+	// console.log(typeof (type))
+	if (typeof (type) === "string" || type === '') {
+		switch (type.toLowerCase()) {
+			case 'full day leave': return 1;
+			case 'half day leave': return 2;
+			case 'one fourth day leave': return 3;
+			case 'no leave': return 4;
+			case '': return 5;
+			default: return 5;
+		}
+	}
+	return 0;
+	// full day leave
+	// half day
+	// one fourth leave
+	// no leave
+}
+
+function isSameMonth(year: number, month: number, date: Date) {
+
+	if (year === date.getFullYear()) {
+		if (month === date.getMonth()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function getDate(date: string | Date, hours: number, min: number): Date {
+	let d = new Date(date);
+	d.setHours(hours);
+	d.setMinutes(min);
+	return d;
+}
+function getHours(time: string): number {
+	if (time === null) {
+		time = "18:00"
+	}
+	return parseInt(time.slice(0, 2));
+}
+function getMintues(time: string): number {
+	if (time === null) {
+		time = "18:00"
+	}
+	return parseInt(time.slice(3, 5));
+}
+function getDays(month, year) {
+	// console.log("month,year", month, year)
+	let days = 31;
+	let m = parseInt(month);
+	switch (m) {
+		case 1: case 3: case 5: case 7: case 8: case 10: case 12: days = 31; break;
+		case 4: case 6: case 9: case 11: days = 30; break;
+		case 2: if (leapyear(year)) {
+			days = 29;
+		} else {
+			days = 28
+		};
+	}
+	return days;
+}
+function leapyear(year) {
+	return (year % 100 === 0) ? (year % 400 === 0) : (year % 4 === 0);
+}

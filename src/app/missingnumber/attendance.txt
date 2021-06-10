@@ -1,0 +1,521 @@
+<!-- Page Content -->
+<div class="content container-fluid">
+	<ngx-spinner bdColor="rgba(0, 0, 0, 0.8)" size="medium" color="#fff" type="timer" [fullScreen]="true">
+		<p style="color: white"> Loading... </p>
+	</ngx-spinner>
+	<!-- Page Header -->
+	<div class="page-header">
+		<div class="row">
+			<div class="col-sm-12">
+				<h3 class="page-title">Attendance</h3>
+				<ul class="breadcrumb">
+					<li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+					<li class="breadcrumb-item active">Attendance</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<!-- /Page Header -->
+
+	<!-- Search Filter -->
+	<form [formGroup]="searchForm" (submit)="search()">
+		<div class="row filter-row">
+			<!-- <div class="col-sm-4 col-md-4">
+                <div class="form-group form-focus select-focus">
+                    <select class="select floating form-control" formControlName="year">
+                        <option value="">-</option>
+                        <option *ngFor="let y of years" [value]="y">{{y}}</option>
+                    </select>
+                    <label class="focus-label">Select Year</label>
+                </div>
+            </div> -->
+			<!-- <div class="col-sm-4 col-md-4">
+                <div class="form-group form-focus select-focus">
+                    <select class="select floating form-control" formControlName="month">
+                        <option value="">-</option>
+                        <option value="1">Jan</option>
+                        <option value="2">Feb</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">Aug</option>
+                        <option value="9">Sept</option>
+                        <option value="10">Oct</option>
+                        <option value="11">Nov</option>
+                        <option value="12">Dec</option>
+                    </select>
+                    <label class="focus-label">Select Month</label>
+                </div>
+            </div> -->
+			<div class="col-sm-6 col-md-6">
+				<div>
+					<div class="form-group form-focus">
+						<input type="text" class="form-control floating" (input)="searchByName($event.target.value)">
+						<label class="focus-label">Employee Name</label>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6 col-md-6">
+				<div class="form-group mb-0 row">
+					<div class="col-md-10">
+						<div class="input-group ">
+							<div class="input-group-prepend">
+								<span class="input-group-text"><i class="fa fa-calendar-plus-o"
+										aria-hidden="true"></i></span>
+							</div>
+							<input type="text" class="form-control" placeholder="Enter month and year"
+								[maxDate]="minDate" [bsConfig]="bsConfig" #dp="bsDatepicker" bsDatepicker
+								[(bsValue)]="datePickerValue" readonly>
+							<div class="input-group-append">
+								<button class="btn btn-sm btn-primary" (click)="changeYearMonth()"
+									type="button">Submit</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	<!-- /Search Filter -->
+
+	<div class="row" style="margin-bottom: 0.5em;">
+		<div style="display: inline-block;" class="col-sm-6 ">
+			<h3>Attendance for : {{getCurrentMonth(currentMonth) + " , " + currentYear | titlecase}} </h3>
+
+		</div>
+		<div class="col-sm-6 " style="display: inline-block;font-weight: bold;">
+			<i style="display: inline" class="fa fa-close text-danger"> Full day leave</i>
+			&nbsp;&nbsp;&nbsp; <i style="display: inline" class="fa fa-check text-warning "> Half day leave</i>
+			&nbsp;&nbsp;&nbsp; <i style="display: inline" class="fa fa-check  text-success"> No leave</i>
+			<br>
+
+			<i style="display: inline" class="fa fa-check text-info "> One fourth day leave</i>
+			&nbsp;&nbsp;&nbsp;<i style="display: inline" class="la la-dot-circle-o text-success"> Today Attendance</i>
+		</div>
+
+	</div>
+
+	<div class="row">
+		<div class="col-lg-12">
+			<div class="table-responsive">
+				<table class="table table-striped custom-table table-nowrap mb-0">
+					<thead>
+						<tr>
+							<th>Employee</th>
+							<th *ngFor='let day of header'>{{day}}</th>
+						</tr>
+					</thead>
+					<tbody *ngIf="dataLoaded">
+						<tr *ngFor='let emp of rows'>
+							<td>
+								<!-- <a class="avatar avatar-xs" routerLink="/employees/employeeprofile"><img alt=""
+                                        src="assets/img/profiles/avatar-016.jpg"></a> -->
+								<a [routerLink]="['/employees','dailyattendance',emp.empId]">{{emp.empName | titlecase
+									}}</a>
+							</td>
+							<td *ngFor='let val of emp.attendance; let i = index'>
+								<!-- {{val.status}} -->
+								<div [ngSwitch]="val.status">
+									<div *ngSwitchCase="1">
+										<a data-toggle="modal" data-target="#attendance_info"
+											(click)='timeline(emp.empId,val.date)'><i
+												class="fa fa-close text-danger"></i></a>
+									</div>
+									<div *ngSwitchCase="2">
+										<a data-toggle="modal" data-target="#attendance_info"
+											(click)='timeline(emp.empId,val.date)'><i
+												class="fa fa-check text-warning "></i></a>
+									</div>
+									<div *ngSwitchCase="3">
+										<a data-toggle="modal" data-target="#attendance_info"
+											(click)='timeline(emp.empId,val.date)'><i
+												class="fa fa-check text-info"></i></a>
+									</div>
+									<div *ngSwitchCase="4">
+										<a data-toggle="modal" data-target="#attendance_info"
+											(click)='timeline(emp.empId,val.date)'><i
+												(click)='timeline(emp.empId,val.date)'
+												class="fa fa-check text-success"></i></a>
+									</div>
+									<div *ngSwitchDefault>
+										<!-- <a data-toggle="modal" data-target="#make_attendance" class="enabled"
+											[ngClass]="{'disabled':date.getDate()!=i+1 || dateFlage==false} "
+											(click)="getEmpData(emp,i+1)">
+											<span *ngIf="(date.getDate()!=i+1 || dateFlage==false); else elseBlock"> <i
+													class="fa fa-minus"></i> </span>
+											<ng-template #elseBlock> <i style="color: rgb(27, 212, 27);font-size:large;"
+													class="la la-dot-circle-o"></i></ng-template>
+										</a> -->
+										<a data-toggle="modal" data-target="#make_attendance" class="enabled"
+											(click)="getEmpData(emp,i+1)">
+											<span *ngIf="(date.getDate()!=i+1 || dateFlage==false); else elseBlock">
+												<i class="fa fa-plus" style="color:#234" aria-hidden="true"></i></span>
+											<ng-template #elseBlock> <i style="color: rgb(27, 212, 27);font-size:large;"
+													class="la la-dot-circle-o"></i></ng-template>
+										</a>
+									</div>
+									<!-- <div *ngIf="initialPunchIn">
+										<a data-toggle="modal" data-target="#attendance_info"
+											(click)='timeline(emp.empId,val.date)'><i
+												(click)='timeline(emp.empId,val.date)'
+												class="fa fa-check text-info"></i></a>
+									</div> -->
+								</div>
+							</td>
+						</tr>
+					</tbody>
+
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Page Content -->
+
+<div class="modal custom-modal fade" id="attendance_info" role="dialog">
+	<div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Attendance Info</h5>
+
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<div class="row">
+					<div class="col-md-6">
+						<div class="card punch-status">
+							<div class="card-body">
+								<h5 class="card-title">Timesheet
+									<small class="text-muted">
+										{{modalData.date | date:'mediumDate'}}
+									</small>
+								</h5>
+								<div *ngIf="modalData.type=='Full day leave'">{{modalData.type}}</div>
+								<div class="punch-det">
+									<h6>Punch In at</h6>
+									<p>{{modalData.punchIn| date:'hh.mm a'}}</p>
+								</div>
+								<div class="punch-info">
+									<div class="punch-hours">
+										<span>{{modalData.production}} </span>
+									</div>
+								</div>
+								<!-- | date:'medium' -->
+								<div class="punch-det">
+									<h6>Punch Out at</h6>
+									<p *ngIf="flag">{{modalData.punchOut| date:'hh.mm a'}}</p>
+									<p *ngIf="!flag">Not yet punched out</p>
+								</div>
+								<div class="statistics">
+									<div class="row">
+										<div class="col-md-6 col-6 text-center">
+											<div class="stats-box">
+												<p>Break</p>
+												<h6 *ngIf="modalData.break<59">{{modalData.break }} min</h6>
+												<h6 *ngIf="modalData.break>59">{{modalData.break/60 | number:'.0-2'}}
+													hrs</h6>
+											</div>
+										</div>
+										<div class="col-md-6 col-6 text-center">
+											<div class="stats-box">
+												<p>Overtime</p>
+												<h6 *ngIf="modalData.overtime<59">{{modalData.overtime }} min</h6>
+												<h6 *ngIf="modalData.overtime>59">{{modalData.overtime/60 |
+													number:'.0-2' }} hrs</h6>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6">
+
+						<div class="card recent-activity">
+							<div>
+								<a class="float-right m-2" style="color:black; cursor:pointer;margin: 10 0 0 10;"
+									data-toggle="modal" data-target="#edit_attendance"
+									(click)="editEmpData(editEmpId,modalData.date)">
+									<i style="font-size: x-large;" class="fa fa-edit"> </i> Edit
+								</a>
+							</div>
+
+							<div class="card-body">
+								<h5 class="card-title">Activity</h5>
+								<ul class="res-activity-list">
+									<li *ngFor="let time of modalData.timeline; let i=index;">
+										<p class="mb-0">
+											Punch {{time.status}}
+											at
+										</p>
+										<p class="res-activity-time">
+											<i class="fa fa-clock-o"></i>
+											{{time.time| date:'hh.mm a'}}.
+										</p>
+										<!--  -->
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Attendance Modal -->
+
+<div class="modal custom-modal fade" id="make_attendance" role="dialog">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Attendance Form</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<form (ngSubmit)="addAttendance()" [formGroup]="attendanceForm">
+					<div class="form-group">
+						<label>Employee Name <span class="text-danger">*</span></label>
+						<input class="form-control" type="text" readonly
+							[class.invalid]="attendanceForm.get('emp').invalid && attendanceForm.get('emp').touched"
+							formControlName="emp">
+						<div *ngIf="attendanceForm.get('emp').invalid && attendanceForm.get('emp').touched">
+							<small *ngIf="attendanceForm.get('emp').invalid && attendanceForm.get('emp').touched"
+								class="text-danger"> *Name required</small>
+						</div>
+					</div>
+					<div class="form-group">
+						<label>Date <span class="text-danger">*</span></label>
+						<input class="form-control" type="text" readonly
+							[class.invalid]="attendanceForm.get('date').invalid && attendanceForm.get('date').touched"
+							formControlName="date">
+						<div *ngIf="attendanceForm.get('date').invalid && attendanceForm.get('date').touched">
+							<small *ngIf="attendanceForm.get('date').invalid && attendanceForm.get('date').touched"
+								class="text-danger"> *Date required</small>
+						</div>
+					</div>
+					<div class="form-group">
+						<input class="mr-3" type="checkbox" formControlName="fullDayLeave"
+							(change)="fullDayLeaveChange('add')">
+						<label>Full Day Leave</label>
+					</div>
+
+					<div formArrayName="punch_timing" class="form-group">
+						<div *ngFor="let item of attendanceForm.get('punch_timing')['controls']; let i = index "
+							[formGroupName]=i>
+							<section>
+								<span style="float: right;">
+									<button type="button" style="padding-top: 0px;padding-bottom: 0px;"
+										class="btn btn-danger" (click)="delete_punch_timing(i)">
+										x
+									</button>
+								</span>
+
+								<label>Punch In <span class="text-danger">*</span></label>
+
+								<timepicker *ngIf="i!==0" formControlName="punch_in"
+									[min]="attendanceForm.value.punch_timing[i-1].punch_out" aria-required="true"
+									[showMeridian]="true" [showSpinners]="true">
+								</timepicker>
+								<timepicker *ngIf="i===0" formControlName="punch_in" aria-required="true"
+									[showMeridian]="true" [showSpinners]="true">
+								</timepicker>
+							</section>
+							<section>
+								<label>Punch Out <span class="text-danger">*</span></label>
+								<timepicker formControlName="punch_out" aria-required="true"
+								[mousewheel]="true"
+								[showMeridian]="true"
+									[showSpinners]="true">
+								</timepicker>
+
+							</section>
+
+						</div>
+					</div>
+					<button type="button" [disabled]="this.attendanceForm.value.fullDayLeave" class="btn btn-primary"
+						(click)="add_punch_timing()"> Add Timing </button>
+					<!-- <div class="form-group">
+						<label>Punch In <span class="text-danger">*</span></label>
+						<timepicker formControlName="punch_in" [min]="" [max]="attendanceForm.value.punch_out"
+							[showMeridian]="true" [showSpinners]="true"></timepicker>
+
+						<div *ngIf="attendanceForm.get('punch_in').invalid ">
+							<small
+								*ngIf="attendanceForm.get('punch_in').invalid && attendanceForm.get('punch_in').touched"
+								class="text-danger"> *Punch In time is required </small>
+
+						</div>
+					</div>
+					<div class="form-group">
+						<label>Punch Out <span class="text-danger">*</span></label>
+
+						<timepicker formControlName="punch_out" [min]="attendanceForm.value.punch_in" [max]=""
+							[mousewheel]="true" [showSpinners]="true"></timepicker>
+						<div *ngIf="attendanceForm.get('punch_out').invalid ">
+							<small
+								*ngIf="attendanceForm.get('punch_out').invalid && attendanceForm.get('punch_out').touched"
+								class="text-danger"> *Punch Out time is required </small>
+						</div>
+					</div> -->
+
+					<div class="form-group" (mouseenter)="totalWorkingHours()">
+						<label>Total Working Hours <span class="text-danger">*</span></label>
+						<input class="form-control" type="text" min="1" max="12" placeholder="" readonly
+							formControlName="total_hours">
+						<div
+							*ngIf="attendanceForm.get('total_hours').invalid && attendanceForm.get('total_hours').touched">
+							<small
+								*ngIf="attendanceForm.get('total_hours').invalid && attendanceForm.get('total_hours').touched"
+								class="text-danger"> *Hours are required</small>
+						</div>
+					</div>
+
+					<div class="submit-section">
+						<button class="btn btn-primary submit-btn" [disabled]="attendanceForm.invalid"
+							type="submit">Submit</button>
+
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- / edit Attendance Modal -->
+
+<div class="modal custom-modal fade" id="edit_attendance" role="dialog">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Edit Attendance Form</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<form (ngSubmit)="editAttendance($event)" [formGroup]="editAttendanceForm">
+					<div class="form-group">
+						<label>Employee Name <span class="text-danger">*</span></label>
+						<input class="form-control" type="text" readonly formControlName="emp">
+						<!-- <div *ngIf="editAttendanceForm.get('emp').invalid && editAttendanceForm.get('emp').touched">
+							<small *ngIf="editAttendanceForm.get('emp').invalid && editAttendanceForm.get('emp').touched"
+								class="text-danger"> *Name required</small>
+						</div> -->
+					</div>
+					<div class="form-group">
+						<label>Date <span class="text-danger">*</span></label>
+						<input class="form-control" type="text" readonly formControlName="date">
+						<!-- <div *ngIf="editAttendanceForm.get('date').invalid && editAttendanceForm.get('date').touched">
+							<small *ngIf="editAttendanceForm.get('date').invalid && editAttendanceForm.get('date').touched"
+								class="text-danger"> *Date required</small>
+						</div> -->
+					</div>
+					<div class="form-group">
+						<input class="mr-3" type="checkbox" formControlName="fullDayLeave"
+							(change)="fullDayLeaveChange('edit')">
+						<label>Full Day Leave</label>
+					</div>
+					<div formArrayName="punch_timing" class="form-group">
+						<div *ngFor="let item of editAttendanceForm.get('punch_timing')['controls']; let i = index "
+							[formGroupName]=i>
+
+							<section class="mt-3">
+								<span style="float: right;">
+									<button type="button" style="padding-top: 0px;padding-bottom: 0px;"
+										class="btn btn-danger" (click)="edit_delete_punch_timing(i)">
+										x
+									</button>
+								</span>
+
+								<label>Punch In <span class="text-danger">*</span></label>
+
+								<timepicker *ngIf="i===0" formControlName="punch_in" aria-required="true"
+									[showMeridian]="true" [showSpinners]="true" (click)="editTotalWorkingHours()">
+								</timepicker>
+								<timepicker *ngIf="i!==0" [min]="editAttendanceForm.value.punch_timing[i-1].punch_in"
+									formControlName="punch_in" aria-required="true" [showMeridian]="true"
+									[showSpinners]="true" (click)="editTotalWorkingHours()">
+								</timepicker>
+							</section>
+							<section>
+								<label>Punch Out <span class="text-danger">*</span></label>
+								<timepicker formControlName="punch_out" aria-required="true" [mousewheel]="true"
+									[showSpinners]="true" (click)="editTotalWorkingHours()">
+								</timepicker>
+								<!-- [min]="editAttendanceForm.value.punch_timing[i].punch_in" -->
+							</section>
+						</div>
+					</div>
+					<button type="button" [disabled]="this.editAttendanceForm.value.fullDayLeave"
+						class="btn btn-primary" (click)="edit_add_punch_timing()"> Add Timing
+					</button>
+					<!-- <div class="form-group">
+						<label>Punch In <span class="text-danger">*</span></label>
+					
+						<timepicker formControlName="punch_in" [min]="" [max]="editAttendanceForm.value.punch_out"
+							[showMeridian]="true" [showSpinners]="true"></timepicker>
+
+						<div *ngIf="editAttendanceForm.get('punch_in').invalid ">
+							<small
+								*ngIf="editAttendanceForm.get('punch_in').invalid && editAttendanceForm.get('punch_in').touched"
+								class="text-danger"> *Punch In time is required </small>
+						</div>
+					</div>
+					<div class="form-group">
+						<label>Punch Out <span class="text-danger">*</span></label>
+
+						<timepicker formControlName="punch_out" [min]="editAttendanceForm.value.punch_in" [max]=""
+							[mousewheel]="true" [showSpinners]="true"></timepicker>
+						<div *ngIf="editAttendanceForm.get('punch_out').invalid ">
+							<small
+								*ngIf="editAttendanceForm.get('punch_out').invalid && editAttendanceForm.get('punch_out').touched"
+								class="text-danger"> *Punch Out time is required </small>
+						</div>
+					</div> -->
+					<div class="form-group">
+						<label>Total Working Hours <span class="text-danger">*</span></label>
+						<input class="form-control" type="text" min="1" max="12" placeholder="" readonly
+							formControlName="total_hours">
+						<div
+							*ngIf="editAttendanceForm.get('total_hours').invalid && editAttendanceForm.get('total_hours').touched">
+							<small
+								*ngIf="editAttendanceForm.get('total_hours').invalid && editAttendanceForm.get('total_hours').touched"
+								class="text-danger"> *Hours are required</small>
+						</div>
+					</div>
+					<div class="submit-section">
+						<button class="btn btn-primary submit-btn" type="submit"
+							[disabled]="editAttendanceForm.invalid">Submit</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<!-- 
+<div class="form-group">
+	<label>Punch In <span class="text-danger">*</span></label>
+	<input type="time"[min]="minTime" [max]="attendanceForm.value.punch_out"  formControlName="punch_in" >
+	<input [ngxTimepicker]="picker">
+	<ngx-material-timepicker-toggle matSuffix [for]="timePick" ></ngx-material-timepicker-toggle>
+	<timepicker formControlName="punch_in" [min]="" [max]="attendanceForm.value.punch_out"
+		[showMeridian]="true" [showSpinners]="true"></timepicker>
+
+	<div *ngIf="attendanceForm.get('punch_in').invalid ">
+		<small
+			*ngIf="attendanceForm.get('punch_in').invalid && attendanceForm.get('punch_in').touched"
+			class="text-danger"> *Punch In time is required </small>
+		<small
+			*ngIf="attendanceForm.value.punch_in.getHours()<=.invalid && attendanceForm.get('punch_in').touched"
+			class="text-danger"> *Punch In time is required </small>
+	</div>
+</div> -->
